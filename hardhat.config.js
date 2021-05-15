@@ -16,10 +16,10 @@ module.exports = {
         blockNumber: 11589707,
       },
     },
-    live: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts: [process.env.MAINNET_PRIVKEY],
-    },
+    // live: {
+    //   url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+    //   accounts: [process.env.MAINNET_PRIVKEY],
+    // },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API,
