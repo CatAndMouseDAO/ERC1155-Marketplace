@@ -10,7 +10,9 @@ contract Market {
     constructor() {
         //https://docs.chain.link/docs/ethereum-addresses/
         priceFeed = AggregatorV3Interface(
+            // ETH / USD     8
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+            //USDT / ETH	18	0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46
         );
     }
 
@@ -18,11 +20,6 @@ contract Market {
      * Returns the latest price
      */
     function getThePrice() public view returns (int256) {
-        // uint80 roundID,
-        // int256 price,
-        // uint256 startedAt,
-        // uint256 timeStamp,
-        // uint80 answeredInRound
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return price;
     }
