@@ -1,13 +1,13 @@
-const tokenFactory = artifacts.require("GameItems");
+const TokenFactory = artifacts.require("GameItems");
 const axios = require("axios");
 
-contract("NTF", ([owner, timmy]) => {
+contract("~ NTF ~", ([owner, timmy]) => {
 	let token;
 
 	before(async () => {
-		token = await tokenFactory.new();
+		token = await TokenFactory.new();
 	});
-	it("get Token", async function () {
+	it("Make a Token", async function () {
 		const THORS_HAMMER = (await token.THORS_HAMMER()).toString();
 		const uri_path = (await token.uri(THORS_HAMMER))
 			.toString()
