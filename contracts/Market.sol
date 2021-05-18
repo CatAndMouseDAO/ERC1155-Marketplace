@@ -4,12 +4,14 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Market {
+contract Market is OwnableUpgradeable {
     AggregatorV3Interface internal priceFeed;
 
     struct Offer {
-        address admin;
+        address payable admin;
         address token;
         uint256 tokenID;
         uint256 amount;
@@ -20,7 +22,15 @@ contract Market {
     mapping(uint256 => Offer) public offers;
     uint256 public numOffers;
 
+    address payable private collector;
+    uint256 fee;
+
     constructor() {
+        __Ownable_init_unchained();
+
+        collector = payable(tx.origin);
+        fee = 100;
+
         //https://docs.chain.link/docs/ethereum-addresses/
         priceFeed = AggregatorV3Interface(
             // ETH / USD     8
@@ -32,6 +42,14 @@ contract Market {
     modifier existOffer(uint256 offerID) {
         require(offerID < numOffers, "Offer don't exist");
         _;
+    }
+
+    function setCollector(address payable _collector) public onlyOwner{
+        collector = _collector;
+    }
+
+    function setFee(uint256 _fee) public onlyOwner{
+        fee = _fee;
     }
 
     /**
@@ -72,7 +90,7 @@ contract Market {
 
     function BuyOffer(uint256 offerID) public payable existOffer(offerID) {
         ERC1155 token = ERC1155(offers[offerID].token);
-        uint256 fee = msg.value / 100; // 1%
+        uint256 _fee = msg.value / fee; // 1%
         uint256 remaind = msg.value - fee;
         uint256 price = getTokenPrice(offerID);
         require(remaind >= price, "not enough ETH");
@@ -90,5 +108,14 @@ contract Market {
             offers[offerID].amount,
             ""
         );
+        
+        collector.transfer(_fee);
+        offers[offerID].admin.transfer(price);
+        payable(msg.sender).transfer(address(this).balance);
     }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
 }

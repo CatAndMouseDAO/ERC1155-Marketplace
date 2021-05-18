@@ -9,10 +9,21 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 	let shield;
 
+	let price = 0;
+
 	before(async () => {
 		token = await TokenFactory.new({ from: tokenCreator });
 		market = await Market.new({ from: marketManager });
+
+		console.log({
+			token:token.address,
+			market:market.address,
+			marketManager:marketManager,
+			tokenCreator:tokenCreator,
+			buyer:buyer,
+		});
 	});
+
 
 	describe("Make an offer", async function () {
 
@@ -69,8 +80,6 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 	});
 
 	describe("Consulting Price", async function () {
-		let price = 0;
-
 		it("Get price ETH => USD", async function () {
 			const _price = (await market.getThePrice()).toString();
 			price = parseFloat(_price.slice(0, _price.length - 8) + '.' + _price.slice(_price.length - 8, _price.length));
@@ -89,19 +98,45 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 	});
 
 	describe("Buy the offer", async function () {
+		let preFee;
+		let posFee;
+		let preAuthorBalance;
+		let posAuthorBalance;
+		let preBuyerBalance;
+		let posBuyerBalance;
+
 		it("Buy the offer", async function () {
 
-			const buyPreBalanace = (await token.balanceOf(buyer, shield)).toString();
-			const OwnPreBalanace = (await token.balanceOf(tokenCreator, shield)).toString();
-			market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') });
-			const buyPosBalanace = (await token.balanceOf(buyer, shield)).toString();
-			const OwnPosBalanace = (await token.balanceOf(tokenCreator, shield)).toString();
-			console.log(
-				'buyPreBalanace: ', buyPreBalanace,
-				'OwnPreBalanace: ', OwnPreBalanace,
-				'buyPosBalanace: ', buyPosBalanace,
-				'OwnPosBalanace: ', OwnPosBalanace,
-			);
+			const buyPreBalanace = Number(await token.balanceOf(buyer, shield));
+			preFee = Number(await web3.eth.getBalance(marketManager));
+			preAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
+			preBuyerBalance = Number(await web3.eth.getBalance(buyer));
+			const tx = await market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') });
+			const buyPosBalanace = Number(await token.balanceOf(buyer, shield));
+			posFee = Number(await web3.eth.getBalance(marketManager));
+			posAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
+			posBuyerBalance = Number(await web3.eth.getBalance(buyer));
+			console.log('\tGas used: ', tx.receipt.gasUsed);
+			
+			assert.isAbove(buyPosBalanace, buyPreBalanace);
+		});
+		it("Fee charged", async function () {
+			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
+			assert.equal(preFee + fee, posFee);
+		});
+		it("Payment to the author", async function () {
+			console.log({
+				pre:preAuthorBalance-price,
+				pos:posAuthorBalance
+			});
+			// expect(preAuthorBalance+price).to.be.closeTo(posAuthorBalance, 1e-6)
+		});
+		it("Eth refund", async function () {
+			console.log({
+				pre:preBuyerBalance-price,
+				pos:posBuyerBalance
+			});
+			// expect(preBuyerBalance-price).to.be.closeTo(posBuyerBalance, 1e-6)
 		});
 	});
 
