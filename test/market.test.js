@@ -81,10 +81,10 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 	describe("Consulting Price", async function () {
 		it("Get price ETH => USD", async function () {
-			const _price = (await market.getThePrice()).toString();
-			price = parseFloat(_price.slice(0, _price.length - 8) + '.' + _price.slice(_price.length - 8, _price.length));
-			console.log('\tETH Price in USD: ', price);
-			assert.notEqual(price, 0);
+			let _price = (await market.getThePrice()).toString();
+			_price = parseFloat(_price.slice(0, _price.length - 8) + '.' + _price.slice(_price.length - 8, _price.length));
+			console.log('\tETH Price in USD: ', _price);
+			assert.notEqual(_price, 0);
 		});
 
 		it("Get token price", async function () {
@@ -118,6 +118,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			posBuyerBalance = Number(await web3.eth.getBalance(buyer));
 			console.log('\tGas used: ', tx.receipt.gasUsed);
 			
+			// balance of Token must increase
 			assert.isAbove(buyPosBalanace, buyPreBalanace);
 		});
 		it("Fee charged", async function () {
@@ -126,17 +127,19 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		});
 		it("Payment to the author", async function () {
 			console.log({
-				pre:preAuthorBalance-price,
-				pos:posAuthorBalance
+				preAuthBalance:preAuthorBalance/*-price*/,
+				posAuthBalance:posAuthorBalance
 			});
-			// expect(preAuthorBalance+price).to.be.closeTo(posAuthorBalance, 1e-6)
+			// diff btw posBalance - (preBalnace + price) < 3.000.000
+			expect(posAuthorBalance).to.be.closeTo(preAuthorBalance+Number(price), 3e6)
 		});
 		it("Eth refund", async function () {
 			console.log({
-				pre:preBuyerBalance-price,
-				pos:posBuyerBalance
+				preBuyerBalance:preBuyerBalance/*-price*/,
+				posBuyerBalance:posBuyerBalance
 			});
-			// expect(preBuyerBalance-price).to.be.closeTo(posBuyerBalance, 1e-6)
+			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
+			expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-Number(price)-fee, 3e6)
 		});
 	});
 

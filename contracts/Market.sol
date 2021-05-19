@@ -96,18 +96,18 @@ contract Market is OwnableUpgradeable {
         require(remaind >= price, "not enough ETH");
         token.safeTransferFrom(
             offers[offerID].admin,
-            address(this),
-            offers[offerID].tokenID,
-            offers[offerID].amount,
-            ""
-        );
-        token.safeTransferFrom(
-            address(this),
             msg.sender,
             offers[offerID].tokenID,
             offers[offerID].amount,
             ""
         );
+        // token.safeTransferFrom(
+        //     address(this),
+        //     msg.sender,
+        //     offers[offerID].tokenID,
+        //     offers[offerID].amount,
+        //     ""
+        // );
         
         collector.transfer(_fee);
         offers[offerID].admin.transfer(price);
