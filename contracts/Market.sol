@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract Market is OwnableUpgradeable {
@@ -26,12 +25,11 @@ contract Market is OwnableUpgradeable {
     address payable private collector;
     uint256 fee;
 
-    constructor() {
+    function initialize() external initializer {
         __Ownable_init_unchained();
 
         collector = payable(tx.origin);
         fee = 100;
-        console.log(block.timestamp);
         //https://docs.chain.link/docs/ethereum-addresses/
         priceFeed = AggregatorV3Interface(
             // ETH / USD     8
@@ -45,11 +43,11 @@ contract Market is OwnableUpgradeable {
         _;
     }
 
-    function setCollector(address payable _collector) public onlyOwner{
+    function setCollector(address payable _collector) external onlyOwner{
         collector = _collector;
     }
 
-    function setFee(uint256 _fee) public onlyOwner{
+    function setFee(uint256 _fee) external onlyOwner{
         fee = _fee;
     }
 
@@ -74,14 +72,14 @@ contract Market is OwnableUpgradeable {
     }
 
     function cancelOffer(uint256 offerID)
-        public
+        external
         existOffer(offerID)
     {
-        // require(msg.sender == offers[offerID].admin,"Only token creator do that");
+        require(msg.sender == offers[offerID].admin,"Only token creator do that");
         offers[offerID].available = false;
     }
 
-    function MakeOffer(Offer memory _offer) public returns (uint256) {
+    function MakeOffer(Offer memory _offer) external returns (uint256) {
         ERC1155 token = ERC1155(_offer.token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
@@ -118,15 +116,15 @@ contract Market is OwnableUpgradeable {
             offers[offerID].amount,
             ""
         );
-        // QUESTION: my modifier is already passed, it will execute again?
-        cancelOffer(offerID);
+        
+        offers[offerID].available = false;
         collector.transfer(_fee);
         offers[offerID].admin.transfer(price);
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
-        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-    }
+    // function onERC1155Received(address, address, uint256, uint256, bytes memory) external virtual returns (bytes4) {
+    //     return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    // }
 
 }

@@ -1,5 +1,6 @@
 const { web3 } = require('@openzeppelin/test-helpers/src/setup');
 const { expectRevert,time } = require('@openzeppelin/test-helpers');
+const { ethers, upgrades } = require("hardhat");
 
 const Market = artifacts.require("Market");
 const TokenFactory = artifacts.require("GameItems");
@@ -14,7 +15,10 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 	before(async () => {
 		token = await TokenFactory.new({ from: tokenCreator });
-		market = await Market.new({ from: marketManager });
+
+		const MarketFactory = await ethers.getContractFactory("Market");
+		const proxy = await upgrades.deployProxy(MarketFactory);
+		market = await Market.at(proxy.address);
 
 		console.log({
 			token:token.address,
@@ -172,7 +176,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 				"Expired offer"
 			);
 		});
-		it("Expired offer", async function () {
+		it("Cancelled offer", async function () {
 			const silver = Number(await token.SILVER());
 
 			const offerID = await market.MakeOffer({
