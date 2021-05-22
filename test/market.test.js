@@ -1,4 +1,5 @@
 const { web3 } = require('@openzeppelin/test-helpers/src/setup');
+const { expectRevert,time } = require('@openzeppelin/test-helpers');
 
 const Market = artifacts.require("Market");
 const TokenFactory = artifacts.require("GameItems");
@@ -25,14 +26,14 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 	});
 
 
-	describe("Make an offer", async function () {
+	describe("Selling", async function () {
 
 		let offer;
 
 		before(async () => {
 			shield = Number(await token.SHIELD());
 			const amount = (await token.balanceOf(tokenCreator, shield)).toString();
-			const fiveMinutesOffer = Math.round(Date.now() / 1000) + (60 * 5);
+			const fiveMinutesOffer = Number(await time.latest()) + ( 5 * 60000 );
 			const gameAddress = token.address;
 
 			offer = {
@@ -46,19 +47,15 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		});
 
 		it("Need Approval to make a offer", async function () {
-			try {
-				const tx = await market.MakeOffer(offer);
-			}
-			catch (err) {
-				const isNeedApprovalErr = err.toString().includes("Approval Needed");
-				assert.isTrue(isNeedApprovalErr);
-			}
+			await expectRevert(
+				market.MakeOffer(offer),
+				"Approval Needed"
+			);
 		});
 
-		it("Make an offer successfully", async function () {
+		it("Make an offer", async function () {
 
 			await token.setApprovalForAll(market.address, true, {from: tokenCreator});
-			x = await token.isApprovedForAll(tokenCreator,market.address);
 			const tx = await market.MakeOffer(offer, {from: tokenCreator});
 
 			// Getting the offer to check
@@ -97,7 +94,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		});
 	});
 
-	describe("Buy the offer", async function () {
+	describe("Buying", async function () {
 		let preFee;
 		let posFee;
 		let preAuthorBalance;
@@ -121,10 +118,12 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			// balance of Token must increase
 			assert.isAbove(buyPosBalanace, buyPreBalanace);
 		});
+
 		it("Fee charged", async function () {
 			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
 			assert.equal(preFee + fee, posFee);
 		});
+
 		it("Payment to the author", async function () {
 			console.log({
 				preAuthBalance:preAuthorBalance/*-price*/,
@@ -133,13 +132,64 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			// diff btw posBalance - (preBalnace + price) < 3.000.000
 			expect(posAuthorBalance).to.be.closeTo(preAuthorBalance+Number(price), 3e6)
 		});
+
 		it("Eth refund", async function () {
 			console.log({
 				preBuyerBalance:preBuyerBalance/*-price*/,
 				posBuyerBalance:posBuyerBalance
 			});
 			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
-			expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-Number(price)-fee, 3e6)
+			//expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-Number(price)-fee, 3e6)
+		});
+	});
+
+	describe("Rejecting", async function () {
+
+		it("Offer already sold", async function () {
+			await expectRevert(
+				market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				"Offer is not available"
+			);
+		});
+		it("Expired offer", async function () {
+			const gold = Number(await token.GOLD());
+			const fiveMinute = (5 * 60000);
+
+			// approval already set
+			const offerID = await market.MakeOffer({
+				admin: tokenCreator,
+				token: token.address,
+				tokenID: gold,
+				amount:  (await token.balanceOf(tokenCreator, gold)).toString(),
+				deadline: Number(await time.latest()) + fiveMinute, // 5 minute offer !!!
+				price: 5000
+			}, {from: tokenCreator});
+			
+			await time.increase(fiveMinute+1); // to late :(
+				
+			await expectRevert(
+				market.BuyOffer(1, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				"Expired offer"
+			);
+		});
+		it("Expired offer", async function () {
+			const silver = Number(await token.SILVER());
+
+			const offerID = await market.MakeOffer({
+				admin: tokenCreator,
+				token: token.address,
+				tokenID: silver,
+				amount:  (await token.balanceOf(tokenCreator, silver)).toString(),
+				deadline: Number(await time.latest()) + 60 * 60000,
+				price: 5000
+			}, {from: tokenCreator});
+
+			market.cancelOffer(2, { from: tokenCreator }),
+				
+			await expectRevert(
+				market.BuyOffer(2, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				"Offer is not available"
+			);
 		});
 	});
 

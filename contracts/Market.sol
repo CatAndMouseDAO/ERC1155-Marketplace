@@ -12,6 +12,7 @@ contract Market is OwnableUpgradeable {
 
     struct Offer {
         address payable admin;
+        bool available;
         address token;
         uint256 tokenID;
         uint256 amount;
@@ -30,7 +31,7 @@ contract Market is OwnableUpgradeable {
 
         collector = payable(tx.origin);
         fee = 100;
-
+        console.log(block.timestamp);
         //https://docs.chain.link/docs/ethereum-addresses/
         priceFeed = AggregatorV3Interface(
             // ETH / USD     8
@@ -72,12 +73,22 @@ contract Market is OwnableUpgradeable {
         return price;
     }
 
-    function MakeOffer(Offer memory _offer) public {
+    function cancelOffer(uint256 offerID)
+        public
+        existOffer(offerID)
+    {
+        // require(msg.sender == offers[offerID].admin,"Only token creator do that");
+        offers[offerID].available = false;
+    }
+
+    function MakeOffer(Offer memory _offer) public returns (uint256) {
         ERC1155 token = ERC1155(_offer.token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
             "Approval Needed"
         );
+        require(_offer.amount > 0,"Not token to sell");
+        
         Offer storage offer = offers[numOffers++];
         // offer = _offer; there is any way to do this pretty
         offer.admin = _offer.admin;
@@ -86,9 +97,15 @@ contract Market is OwnableUpgradeable {
         offer.amount = _offer.amount;
         offer.deadline = _offer.deadline;
         offer.price = _offer.price;
+        offer.available = true;
+
+        return numOffers;
     }
 
     function BuyOffer(uint256 offerID) public payable existOffer(offerID) {
+        require(offers[offerID].available,"Offer is not available");
+        require(offers[offerID].deadline >= block.timestamp,"Expired offer");
+        console.log('Deadline: ',offers[offerID].deadline, block.timestamp);
         ERC1155 token = ERC1155(offers[offerID].token);
         uint256 _fee = msg.value / fee; // 1%
         uint256 remaind = msg.value - fee;
@@ -101,14 +118,8 @@ contract Market is OwnableUpgradeable {
             offers[offerID].amount,
             ""
         );
-        // token.safeTransferFrom(
-        //     address(this),
-        //     msg.sender,
-        //     offers[offerID].tokenID,
-        //     offers[offerID].amount,
-        //     ""
-        // );
-        
+        // QUESTION: my modifier is already passed, it will execute again?
+        cancelOffer(offerID);
         collector.transfer(_fee);
         offers[offerID].admin.transfer(price);
         payable(msg.sender).transfer(address(this).balance);
