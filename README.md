@@ -10,7 +10,7 @@
 - ✅Buyers need to accept the whole offer, not partially (i.e. can’t buy 4 out of 10 tokens offered)
 - ✅Users won't transfer the token to the marketplace when selling. They only approve the marketplace to spend their tokens.
 - ✅Use forked mainnet to test with chainlink oracles.
-- ❌Add events for selling, buying and cancelling offers
+- ✅Add events for selling, buying and cancelling offers
 - ✅Create a new PRIVATE github repo, add me to it @wafflemakr, push constantly
 - ❌Remember to add comments to your functions!!
 

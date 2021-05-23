@@ -7,7 +7,7 @@
       "hash": "0x0a4dddc11de7c6ab358859ccb3f4fa4f5e88d8a0e597357153416a367d65b44a",
       "type": 0,
       "accessList": null,
-      "blockHash": "0x16e4ed2945d216312b3215ed21c4ab563e3e00cd3f555d179a530f162eaef189",
+      "blockHash": "0xc772cdb8d5c5f1403647d0477af3d693be3b0cb24c09ebaf9e6d9c5474cc0721",
       "blockNumber": 11589710,
       "transactionIndex": 0,
       "confirmations": 1,
@@ -42,9 +42,9 @@
     }
   ],
   "impls": {
-    "ad42d4b2364ad40fd90ff59f2f17f19b18cc1167ee8892c3560002effec737e5": {
+    "bb5e34bc51d7cfda7b81ed79d5c1bb07208d994e753523ad7f70ad4c85fda145": {
       "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-      "txHash": "0x89e733b7bce341d2b9e74c8ea9ff1750ed98d7f6f9bc3c5fc4a4a46cb74b4aa2",
+      "txHash": "0xcc483377d72a09ee5be38eebb4682f8a0f18a94a084c1763b094492563896db1",
       "layout": {
         "storage": [
           {
@@ -80,7 +80,7 @@
           {
             "contract": "Market",
             "label": "priceFeed",
-            "type": "t_contract(AggregatorV3Interface)2308",
+            "type": "t_contract(AggregatorV3Interface)2386",
             "src": "contracts\\Market.sol:10"
           },
           {
@@ -109,7 +109,7 @@
           }
         ],
         "types": {
-          "t_contract(AggregatorV3Interface)2308": {
+          "t_contract(AggregatorV3Interface)2386": {
             "label": "contract AggregatorV3Interface"
           },
           "t_mapping(t_uint256,t_struct(Offer)1881_storage)": {

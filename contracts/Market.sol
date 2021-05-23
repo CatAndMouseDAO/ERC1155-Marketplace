@@ -25,6 +25,32 @@ contract Market is OwnableUpgradeable {
     address payable private collector;
     uint256 fee;
 
+    event Sell(
+        uint256 offerID,
+        address indexed admin,
+        address indexed token,
+        uint256 indexed tokenID,
+        uint256 amount,
+        uint256 deadline,
+        uint256 price
+    );
+    event Buy(
+        uint256 offerID,
+        address indexed buyer,
+        address indexed token,
+        uint256 indexed tokenID,
+        uint256 amount,
+        uint256 deadline,
+        uint256 price,
+        uint256 fee
+    );
+    event Cancel(
+        address indexed canceller,
+        address indexed token,
+        uint256 indexed tokenID,
+        uint256 time
+    );
+
     function initialize() external initializer {
         __Ownable_init_unchained();
 
@@ -77,9 +103,15 @@ contract Market is OwnableUpgradeable {
     {
         require(msg.sender == offers[offerID].admin,"Only token creator do that");
         offers[offerID].available = false;
+        emit Cancel(
+            msg.sender,
+            offers[offerID].token,
+            offers[offerID].tokenID,
+            block.timestamp
+        );
     }
 
-    function MakeOffer(Offer memory _offer) external returns (uint256) {
+    function MakeOffer(Offer memory _offer) external {
         ERC1155 token = ERC1155(_offer.token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
@@ -87,7 +119,7 @@ contract Market is OwnableUpgradeable {
         );
         require(_offer.amount > 0,"Not token to sell");
         
-        Offer storage offer = offers[numOffers++];
+        Offer storage offer = offers[numOffers];
         // offer = _offer; there is any way to do this pretty
         offer.admin = _offer.admin;
         offer.token = _offer.token;
@@ -97,18 +129,26 @@ contract Market is OwnableUpgradeable {
         offer.price = _offer.price;
         offer.available = true;
 
-        return numOffers;
+        emit Sell(
+            numOffers,
+            _offer.admin,
+            _offer.token,
+            _offer.tokenID,
+            _offer.amount,
+            _offer.deadline,
+            _offer.price
+        );
+        numOffers++;
     }
 
     function BuyOffer(uint256 offerID) public payable existOffer(offerID) {
         require(offers[offerID].available,"Offer is not available");
         require(offers[offerID].deadline >= block.timestamp,"Expired offer");
-        console.log('Deadline: ',offers[offerID].deadline, block.timestamp);
+        
         ERC1155 token = ERC1155(offers[offerID].token);
-        uint256 _fee = msg.value / fee; // 1%
-        uint256 remaind = msg.value - fee;
         uint256 price = getTokenPrice(offerID);
-        require(remaind >= price, "not enough ETH");
+        uint256 _fee = price / fee;
+        require(msg.value >= price + _fee, "not enough ETH");
         token.safeTransferFrom(
             offers[offerID].admin,
             msg.sender,
@@ -117,14 +157,24 @@ contract Market is OwnableUpgradeable {
             ""
         );
         
+        emit Buy(
+            offerID,
+            msg.sender,
+            offers[offerID].token,
+            offers[offerID].tokenID,
+            offers[offerID].amount,
+            block.timestamp,
+            price,
+            _fee
+        );
         offers[offerID].available = false;
         collector.transfer(_fee);
         offers[offerID].admin.transfer(price);
         payable(msg.sender).transfer(address(this).balance);
     }
 
-    // function onERC1155Received(address, address, uint256, uint256, bytes memory) external virtual returns (bytes4) {
-    //     return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-    // }
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) external virtual returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
 
 }

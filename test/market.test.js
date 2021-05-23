@@ -2,6 +2,8 @@ const { web3 } = require('@openzeppelin/test-helpers/src/setup');
 const { expectRevert,time } = require('@openzeppelin/test-helpers');
 const { ethers, upgrades } = require("hardhat");
 
+const truffleAssert = require('truffle-assertions');
+
 const Market = artifacts.require("Market");
 const TokenFactory = artifacts.require("GameItems");
 
@@ -62,6 +64,14 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			await token.setApprovalForAll(market.address, true, {from: tokenCreator});
 			const tx = await market.MakeOffer(offer, {from: tokenCreator});
 
+			truffleAssert.eventEmitted(tx, 'Sell', (ev) => {
+				return (
+					ev.admin == offer.admin &&
+					ev.token == offer.token &&
+					ev.tokenID == offer.tokenID 
+				);
+			});
+
 			// Getting the offer to check
 			const _offer0 = await market.offers(0);
 			const offer0 = {
@@ -74,8 +84,9 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			};
 
 			console.log('\tGas used: ', tx.receipt.gasUsed);
+			// console.log('\tevents: ', tx);
+			
 			const isOfferSet = JSON.stringify(offer0) == JSON.stringify(offer);
-
 			assert.isTrue(isOfferSet);
 		});
 	});
@@ -113,6 +124,21 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			preAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
 			preBuyerBalance = Number(await web3.eth.getBalance(buyer));
 			const tx = await market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') });
+
+			timeStamp = Number(await time.latest());
+			tokenPrice = Number(await market.getTokenPrice(0));
+			_fee = Number(await market.getTokenPrice(0)) / 100;
+			truffleAssert.eventEmitted(tx, 'Buy', (ev) => {
+				return (
+					ev.buyer == buyer &&
+					ev.token == token.address &&
+					ev.tokenID == 4 &&
+					ev.deadline == timeStamp &&
+					ev.price == tokenPrice &&
+					ev.fee == _fee
+				);
+			});
+
 			const buyPosBalanace = Number(await token.balanceOf(buyer, shield));
 			posFee = Number(await web3.eth.getBalance(marketManager));
 			posAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
@@ -124,7 +150,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		});
 
 		it("Fee charged", async function () {
-			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
+			const fee = Number(await market.getTokenPrice(0)) / 100; // 1% of token price
 			assert.equal(preFee + fee, posFee);
 		});
 
@@ -160,7 +186,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			const fiveMinute = (5 * 60000);
 
 			// approval already set
-			const offerID = await market.MakeOffer({
+			const tx = await market.MakeOffer({
 				admin: tokenCreator,
 				token: token.address,
 				tokenID: gold,
@@ -168,7 +194,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 				deadline: Number(await time.latest()) + fiveMinute, // 5 minute offer !!!
 				price: 5000
 			}, {from: tokenCreator});
-			
+			console.log(tx);
 			await time.increase(fiveMinute+1); // to late :(
 				
 			await expectRevert(
@@ -188,8 +214,18 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 				price: 5000
 			}, {from: tokenCreator});
 
-			market.cancelOffer(2, { from: tokenCreator }),
-				
+			const tx = await market.cancelOffer(2, { from: tokenCreator });
+
+			const timeStamp = Number(await time.latest());
+			truffleAssert.eventEmitted(tx, 'Cancel', (ev) => {
+				return (
+					ev.canceller == tokenCreator &&
+					ev.token == token.address &&
+					ev.tokenID == silver &&
+					ev.time ==  timeStamp
+				);
+			});	
+
 			await expectRevert(
 				market.BuyOffer(2, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
 				"Offer is not available"
