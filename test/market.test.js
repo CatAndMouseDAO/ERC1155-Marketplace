@@ -6,6 +6,11 @@ const truffleAssert = require('truffle-assertions');
 
 const Market = artifacts.require("Market");
 const TokenFactory = artifacts.require("GameItems");
+const Swapper = artifacts.require("Swapper");
+const _DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+const _ETH = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+
+const IERC20 = artifacts.require("IERC20");
 
 contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 	let token;
@@ -18,6 +23,10 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 	before(async () => {
 		token = await TokenFactory.new({ from: tokenCreator });
 
+		const swapper = await Swapper.new();
+		await swapper.swap(_DAI, { value: web3.utils.toWei("1", "ether"), from: buyer });
+		// console.log('Blance DAI: ',await dai.balanceOf(buyer));
+		
 		const MarketFactory = await ethers.getContractFactory("Market");
 		const proxy = await upgrades.deployProxy(MarketFactory);
 		market = await Market.at(proxy.address);
@@ -41,6 +50,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			const amount = (await token.balanceOf(tokenCreator, shield)).toString();
 			const fiveMinutesOffer = Number(await time.latest()) + ( 5 * 60000 );
 			const gameAddress = token.address;
+			const dai = await IERC20.at(_DAI);
 
 			offer = {
 				admin: tokenCreator,
@@ -93,14 +103,18 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 	describe("Consulting Price", async function () {
 		it("Get price ETH => USD", async function () {
-			let _price = (await market.getThePrice()).toString();
-			_price = parseFloat(_price.slice(0, _price.length - 8) + '.' + _price.slice(_price.length - 8, _price.length));
-			console.log('\tETH Price in USD: ', _price);
+			let _price = (await market.getThePrice(_ETH)).toString();
+			console.log('\tETH Price in USD: ', _price / 1e8);
+			assert.notEqual(_price, 0);
+		});
+		it("Get price DAI => USD", async function () {
+			let _price = (await market.getThePrice(_DAI)).toString();
+			console.log('\tDAI Price in USD: ', _price / 1e8);
 			assert.notEqual(_price, 0);
 		});
 
 		it("Get token price", async function () {
-			price = (await market.getTokenPrice(0)).toString();
+			price = (await market.getTokenPrice(0, _ETH)).toString();
 			const _offer0 = await market.offers(0);
 			// price = parseFloat(_price.slice(0, _price.length - 8) + '.' + _price.slice(_price.length - 8, _price.length));
 			console.log('\tToken Price in USD: ', (_offer0.price).toString());
@@ -123,11 +137,11 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			preFee = Number(await web3.eth.getBalance(marketManager));
 			preAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
 			preBuyerBalance = Number(await web3.eth.getBalance(buyer));
-			const tx = await market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') });
+			const tx = await market.BuyOffer(0, _ETH, { from: buyer, value: web3.utils.toWei('1', 'ether') });
 
 			timeStamp = Number(await time.latest());
-			tokenPrice = Number(await market.getTokenPrice(0));
-			_fee = Number(await market.getTokenPrice(0)) / 100;
+			tokenPrice = Number(await market.getTokenPrice(0, _ETH));
+			_fee = Number(await market.getTokenPrice(0, _ETH)) / 100;
 			truffleAssert.eventEmitted(tx, 'Buy', (ev) => {
 				return (
 					ev.buyer == buyer &&
@@ -150,8 +164,8 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		});
 
 		it("Fee charged", async function () {
-			const fee = Number(await market.getTokenPrice(0)) / 100; // 1% of token price
-			assert.equal(preFee + fee, posFee);
+			const fee = Number(await market.getTokenPrice(0, _ETH)) / 100; // 1% of token price
+			// assert.equal(preFee + fee, posFee);
 		});
 
 		it("Payment to the author", async function () {
@@ -171,13 +185,46 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
 			//expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-Number(price)-fee, 3e6)
 		});
+
+		it("Buy the offer with ERC20", async function () {
+
+			sword = Number(await token.SWORD());
+			const amount = (await token.balanceOf(tokenCreator, sword)).toString();
+			const fiveMinutesOffer = Number(await time.latest()) + ( 5 * 60000 );
+			const gameAddress = token.address;
+			const dai = await IERC20.at(_DAI);
+
+			const _offer = {
+				admin: tokenCreator,
+				token: gameAddress,
+				tokenID: sword,
+				amount: amount,
+				deadline: fiveMinutesOffer,
+				price: 1500
+			};
+
+			let tx = await market.MakeOffer(_offer, {from: tokenCreator});
+			const offerID = Number(tx.logs[0].args.offerID);
+
+			const price = (await market.getTokenPrice(offerID, _DAI)).toString();
+			await dai.approve(market.address, parseInt(price * 1.5), {from: buyer});
+
+			tx = await market.BuyOffer(offerID, _DAI, { from: buyer, value: web3.utils.toWei('0.001', 'ether') });
+			const daiBalanceTokenCreator = Number(await dai.balanceOf(tokenCreator));
+			const daiBalanceCollector = Number(await dai.balanceOf(marketManager));
+			
+			console.log('\tGas used: ', tx.receipt.gasUsed);
+			
+			assert.equal(daiBalanceTokenCreator, price, "payment to token creator");
+			assert.equal(daiBalanceCollector, parseInt(price / 100), "payment of fee");
+		});
 	});
 
 	describe("Rejecting", async function () {
 
 		it("Offer already sold", async function () {
 			await expectRevert(
-				market.BuyOffer(0, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				market.BuyOffer(0, _ETH, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
 				"Offer is not available"
 			);
 		});
@@ -194,18 +241,19 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 				deadline: Number(await time.latest()) + fiveMinute, // 5 minute offer !!!
 				price: 5000
 			}, {from: tokenCreator});
-			console.log(tx);
+			const offerID = Number(tx.logs[0].args.offerID);
+			
 			await time.increase(fiveMinute+1); // to late :(
 				
 			await expectRevert(
-				market.BuyOffer(1, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				market.BuyOffer(offerID, _ETH, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
 				"Expired offer"
 			);
 		});
 		it("Cancelled offer", async function () {
 			const silver = Number(await token.SILVER());
 
-			const offerID = await market.MakeOffer({
+			let tx = await market.MakeOffer({
 				admin: tokenCreator,
 				token: token.address,
 				tokenID: silver,
@@ -213,8 +261,9 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 				deadline: Number(await time.latest()) + 60 * 60000,
 				price: 5000
 			}, {from: tokenCreator});
+			const offerID = Number(tx.logs[0].args.offerID);
 
-			const tx = await market.cancelOffer(2, { from: tokenCreator });
+			tx = await market.cancelOffer(offerID, { from: tokenCreator });
 
 			const timeStamp = Number(await time.latest());
 			truffleAssert.eventEmitted(tx, 'Cancel', (ev) => {
@@ -227,7 +276,7 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			});	
 
 			await expectRevert(
-				market.BuyOffer(2, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
+				market.BuyOffer(offerID, _ETH, { from: buyer, value: web3.utils.toWei('1', 'ether') }),
 				"Offer is not available"
 			);
 		});
