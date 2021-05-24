@@ -25,19 +25,10 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 		const swapper = await Swapper.new();
 		await swapper.swap(_DAI, { value: web3.utils.toWei("1", "ether"), from: buyer });
-		// console.log('Blance DAI: ',await dai.balanceOf(buyer));
 		
 		const MarketFactory = await ethers.getContractFactory("Market");
 		const proxy = await upgrades.deployProxy(MarketFactory);
 		market = await Market.at(proxy.address);
-
-		console.log({
-			token:token.address,
-			market:market.address,
-			marketManager:marketManager,
-			tokenCreator:tokenCreator,
-			buyer:buyer,
-		});
 	});
 
 
@@ -131,6 +122,10 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 		let preBuyerBalance;
 		let posBuyerBalance;
 
+		let gasUsed;
+		let tokenPrice;
+		let _fee;
+
 		it("Buy the offer", async function () {
 
 			const buyPreBalanace = Number(await token.balanceOf(buyer, shield));
@@ -157,7 +152,8 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 			posFee = Number(await web3.eth.getBalance(marketManager));
 			posAuthorBalance = Number(await web3.eth.getBalance(tokenCreator));
 			posBuyerBalance = Number(await web3.eth.getBalance(buyer));
-			console.log('\tGas used: ', tx.receipt.gasUsed);
+			gasUsed = tx.receipt.gasUsed;
+			console.log('\tGas used: ', gasUsed);
 			
 			// balance of Token must increase
 			assert.isAbove(buyPosBalanace, buyPreBalanace);
@@ -165,25 +161,24 @@ contract("~ Market ~", ([marketManager, tokenCreator, buyer]) => {
 
 		it("Fee charged", async function () {
 			const fee = Number(await market.getTokenPrice(0, _ETH)) / 100; // 1% of token price
-			// assert.equal(preFee + fee, posFee);
+			assert.equal(preFee + fee + gasUsed, posFee);
 		});
 
 		it("Payment to the author", async function () {
-			console.log({
-				preAuthBalance:preAuthorBalance/*-price*/,
-				posAuthBalance:posAuthorBalance
-			});
 			// diff btw posBalance - (preBalnace + price) < 3.000.000
 			expect(posAuthorBalance).to.be.closeTo(preAuthorBalance+Number(price), 3e6)
 		});
 
 		it("Eth refund", async function () {
-			console.log({
-				preBuyerBalance:preBuyerBalance/*-price*/,
-				posBuyerBalance:posBuyerBalance
-			});
-			const fee = Number(await web3.utils.toWei('0.01', 'ether')); // 1% of 1 Ether of previous test
-			//expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-Number(price)-fee, 3e6)
+			const fee = Number(price) / 100; // 1% of price
+			// console.log({
+			// 	preBuyerBalance:preBuyerBalance,
+			// 	posBuyerBalance:posBuyerBalance,
+			// 	tokenPrice:tokenPrice,
+			// 	_fee:_fee,
+			// 	gasUsed:gasUsed,
+			// });
+			// expect(preBuyerBalance).to.be.closeTo(posBuyerBalance-(tokenPrice+_fee+gasUsed), 3e12)
 		});
 
 		it("Buy the offer with ERC20", async function () {

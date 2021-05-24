@@ -7,7 +7,7 @@
       "hash": "0xbe78f8a14e41f9e18684112edf9fa301f31681488b0744fa5e12acbde82fbba9",
       "type": 0,
       "accessList": null,
-      "blockHash": "0xa3bbc430c3a32bcb2236a0336a5179aeafe152bde11666ddbc346431b87a1e72",
+      "blockHash": "0xfb11b267a7080cbacb5c86515c3a2d40b17bfeac3a220560eaa83ce0311dcf6c",
       "blockNumber": 11589712,
       "transactionIndex": 0,
       "confirmations": 1,
@@ -52,9 +52,9 @@
     }
   ],
   "impls": {
-    "86c2fb9416233a9da222a880620e6626e8802707f913cbb161afc12b64f19749": {
+    "0d03c81e04d633141f1714d2a35763628211fe3f305594d247a3dbc4e89ed808": {
       "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-      "txHash": "0x3c18686398b20ee7ab72f940c390ccb13c57c2b57bd7909af80f77784cfc2f8f",
+      "txHash": "0xbbbfb72a2959ec36521eef71babcc742a24291758d0cb487aff97d6b3b6a1732",
       "layout": {
         "storage": [
           {
@@ -90,48 +90,48 @@
           {
             "contract": "Market",
             "label": "offers",
-            "type": "t_mapping(t_uint256,t_struct(Offer)2269_storage)",
-            "src": "contracts\\Market.sol:22"
-          },
-          {
-            "contract": "Market",
-            "label": "PaymentsAllowed",
-            "type": "t_mapping(t_address,t_address)",
-            "src": "contracts\\Market.sol:23"
+            "type": "t_mapping(t_uint256,t_struct(Offer)2271_storage)",
+            "src": "contracts\\Market.sol:27"
           },
           {
             "contract": "Market",
             "label": "numOffers",
             "type": "t_uint256",
-            "src": "contracts\\Market.sol:24"
+            "src": "contracts\\Market.sol:28"
+          },
+          {
+            "contract": "Market",
+            "label": "PaymentsAllowed",
+            "type": "t_mapping(t_address,t_address)",
+            "src": "contracts\\Market.sol:32"
           },
           {
             "contract": "Market",
             "label": "collector",
             "type": "t_address_payable",
-            "src": "contracts\\Market.sol:26"
+            "src": "contracts\\Market.sol:35"
           },
           {
             "contract": "Market",
             "label": "fee",
             "type": "t_uint256",
-            "src": "contracts\\Market.sol:27"
+            "src": "contracts\\Market.sol:36"
           },
           {
             "contract": "Market",
             "label": "_ETH",
             "type": "t_address",
-            "src": "contracts\\Market.sol:55"
+            "src": "contracts\\Market.sol:68"
           }
         ],
         "types": {
-          "t_mapping(t_uint256,t_struct(Offer)2269_storage)": {
+          "t_mapping(t_uint256,t_struct(Offer)2271_storage)": {
             "label": "mapping(uint256 => struct Market.Offer)"
           },
           "t_uint256": {
             "label": "uint256"
           },
-          "t_struct(Offer)2269_storage": {
+          "t_struct(Offer)2271_storage": {
             "label": "struct Market.Offer",
             "members": [
               {

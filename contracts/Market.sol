@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
@@ -7,8 +7,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+/// @title Market for ERC1155 token
+/// @author Nazh_G
 contract Market is OwnableUpgradeable {
 
+    /// @notice the offers has the token that can be bought
+    /// @dev price is in USD
+    /// @dev deadline is a TIMESTAMP
     struct Offer {
         address payable admin;
         bool available;
@@ -16,16 +21,21 @@ contract Market is OwnableUpgradeable {
         uint256 tokenID;
         uint256 amount;
         uint256 deadline;
-        uint256 price; // in usd
+        uint256 price;
     }
 
     mapping(uint256 => Offer) public offers;
-    mapping(address => address) public PaymentsAllowed;
     uint256 public numOffers;
 
-    address payable private collector;
-    uint256 fee;
+    /// @notice here are stored the ERC20 tokens that can be used to buy
+    /// @dev KEY: token address => VALUE AggregatorV3Interface address (to get the price)
+    mapping(address => address) public PaymentsAllowed;
 
+    /// @notice fees will fall here
+    address payable private collector;
+    uint256 private fee;
+
+    /// @notice admin is who publish
     event Sell(
         uint256 offerID,
         address indexed admin,
@@ -35,6 +45,8 @@ contract Market is OwnableUpgradeable {
         uint256 deadline,
         uint256 price
     );
+
+    /// @notice deadline is the moment when was buy
     event Buy(
         uint256 offerID,
         address indexed buyer,
@@ -45,6 +57,7 @@ contract Market is OwnableUpgradeable {
         uint256 price,
         uint256 fee
     );
+
     event Cancel(
         address indexed canceller,
         address indexed token,
@@ -54,6 +67,7 @@ contract Market is OwnableUpgradeable {
 
     address _ETH;
 
+    /// @dev init PaymentsAllowed, fee and collerctor
     function initialize() external initializer {
         __Ownable_init_unchained();
 
@@ -78,9 +92,7 @@ contract Market is OwnableUpgradeable {
         fee = _fee;
     }
 
-    /**
-     * Returns the latest price
-     */
+    /// @notice Returns the latest price of a token
     function getThePrice(address paymentMethod) public view returns (int256) {
         require(PaymentsAllowed[paymentMethod] != address(0),"Payment method not supported");
         AggregatorV3Interface priceFeed = AggregatorV3Interface(PaymentsAllowed[paymentMethod]);
@@ -88,6 +100,7 @@ contract Market is OwnableUpgradeable {
         return price;
     }
 
+    /// @notice Returns the price of a Offer
     function getTokenPrice(uint256 offerID, address paymentMethod)
         public
         view
@@ -95,6 +108,7 @@ contract Market is OwnableUpgradeable {
         returns (uint256)
     {
         uint256 price;
+        // ETH need a different logic to get most decimal posible
         if (paymentMethod == _ETH) {
             price = (uint256(1 ether / offers[offerID].price) *
                     uint256(getThePrice(paymentMethod)) / 10**8);
@@ -104,6 +118,7 @@ contract Market is OwnableUpgradeable {
         return price;
     }
 
+    /// @notice mark the offer as not-buyable
     function cancelOffer(uint256 offerID)
         external
         existOffer(offerID)
@@ -118,6 +133,7 @@ contract Market is OwnableUpgradeable {
         );
     }
 
+    /// @notice publishes an offer if you have access to transfer the token
     function MakeOffer(Offer memory _offer) external {
         ERC1155 token = ERC1155(_offer.token);
         require(
@@ -147,6 +163,7 @@ contract Market is OwnableUpgradeable {
         );
     }
 
+    /// @notice Buy the Offer, sending offers token to a buyer, fee to collector y price to token admin
     function BuyOffer(uint256 offerID, address paymentMethod) public payable existOffer(offerID) {
         
         require(offers[offerID].available,"Offer is not available");
@@ -156,11 +173,12 @@ contract Market is OwnableUpgradeable {
         uint256 price = getTokenPrice(offerID, paymentMethod);
         uint256 _fee = price / fee;
 
-        if( paymentMethod == _ETH ) {
+        
+        if( paymentMethod == _ETH ) { // ETH transfers
             require(msg.value >= price + _fee, "not enough ETH");
             collector.transfer(_fee);
             offers[offerID].admin.transfer(price);
-        } else {
+        } else { // ERC20 transfers
             IERC20 paymentToken = IERC20(paymentMethod);
             uint256 funds = paymentToken.allowance(msg.sender, address(this));
             require(funds >= price + _fee, "not enough funds");
@@ -190,6 +208,7 @@ contract Market is OwnableUpgradeable {
         payable(msg.sender).transfer(address(this).balance);
     }
 
+    /// @notice receive token 1155
     function onERC1155Received(address, address, uint256, uint256, bytes memory) external virtual returns (bytes4) {
         return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
