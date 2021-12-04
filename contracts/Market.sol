@@ -65,8 +65,6 @@ contract Market is OwnableUpgradeable {
         uint256 time
     );
 
-    address _ETH;
-
     /// @dev init PaymentsAllowed, fee and collerctor
     function initialize(address wsCHEEZ) external initializer {
         __Ownable_init_unchained();
