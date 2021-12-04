@@ -1,13 +1,22 @@
-const Greeter = artifacts.require("Greeter");
+const { ethers } = require("hardhat");
 
 async function main() {
-  const greeter = await Greeter.new("Hello, Hardhat!");
-  Greeter.setAsDeployed(greeter);
+  const [deployer] = await ethers.getSigners();
 
-  console.log("Greeter deployed to:", greeter.address);
+  // Large number for approvals
+  const largeApproval = '100000000000000000000000000000000';
+  // Initial mint for wsCHEEZ
+  const initialMint = '10000000000000000000000000';
 
-  const greeting = await greeter.greet();
-  console.log("Current Greeting:", greeting);
+  // Deploy DAI
+  const WSCHEEZ = await ethers.getContractFactory('WSCHEEZ');
+  const wsCHEEZ = await WSCHEEZ.deploy( 0 );
+  await wsCHEEZ.mint( deployer.address, initialMint );
+
+  const NFT = await ethers.getContractFactory('NFT');
+  const nft = await NFT.deploy()
+  await nft.mint(initialMint)
+
 }
 
 main()
