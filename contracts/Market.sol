@@ -66,13 +66,10 @@ contract Market is Ownable {
     );
 
     /// @dev init PaymentsAllowed, fee and collerctor
-    function initialize(address wsCHEEZ) external initializer {
-        __Ownable_init_unchained();
-
-        collector = payable(tx.origin);
-        fee = 100;
-
+    constructor(address wsCHEEZ, address DAO) external {
         paymentToken = IERC20(wsCHEEZ);
+        collector = payable(DAO);
+        fee = 100;
     }
 
     modifier existOffer(uint256 offerID) {
@@ -174,7 +171,6 @@ contract Market is Ownable {
         if(offers[offerID].amount == 0){
             offers[offerID].available = false;
         }
-        //payable(msg.sender).transfer(address(this).balance); //Is this necessary?
     }
 
     /// @notice receive token 1155

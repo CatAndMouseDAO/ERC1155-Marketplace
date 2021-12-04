@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 /// @title Test token
 /// @author Nazh_G
 /// @notice this token implements ERC1155 for testing
-contract GameItems is ERC1155 {
+contract NFT is ERC1155 {
     uint256 public constant GOLD = 0;
     uint256 public constant SILVER = 1;
     uint256 public constant THORS_HAMMER = 2;
