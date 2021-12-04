@@ -5,11 +5,11 @@ import "hardhat/console.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 /// @title Market for ERC1155 token
 /// @author Nazh_G
-contract Market is OwnableUpgradeable {
+contract Market is Ownable {
 
     /// @notice the offers has the token that can be bought
     /// @dev price is in USD
