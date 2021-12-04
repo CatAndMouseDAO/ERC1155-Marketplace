@@ -29,7 +29,7 @@ contract Market is OwnableUpgradeable {
 
     /// @notice here are stored the ERC20 tokens that can be used to buy
     /// @dev KEY: token address => VALUE AggregatorV3Interface address (to get the price)
-    mapping(address => address) public PaymentsAllowed;
+    mapping(uint256 => address) public PaymentsAllowed;
 
     /// @notice fees will fall here
     address payable private collector;
@@ -68,15 +68,13 @@ contract Market is OwnableUpgradeable {
     address _ETH;
 
     /// @dev init PaymentsAllowed, fee and collerctor
-    function initialize() external initializer {
+    function initialize(address wsCHEEZ) external initializer {
         __Ownable_init_unchained();
 
         collector = payable(tx.origin);
         fee = 100;
 
-        _ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        PaymentsAllowed[_ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        PaymentsAllowed[0x6B175474E89094C44Da98b954EedeAC495271d0F] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
+        PaymentsAllowed[0] = wsCHEEZ;
     }
 
     modifier existOffer(uint256 offerID) {
@@ -90,32 +88,6 @@ contract Market is OwnableUpgradeable {
 
     function setFee(uint256 _fee) external onlyOwner{
         fee = _fee;
-    }
-
-    /// @notice Returns the latest price of a token
-    function getThePrice(address paymentMethod) public view returns (int256) {
-        require(PaymentsAllowed[paymentMethod] != address(0),"Payment method not supported");
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(PaymentsAllowed[paymentMethod]);
-        (, int256 price, , , ) = priceFeed.latestRoundData();
-        return price;
-    }
-
-    /// @notice Returns the price of a Offer
-    function getTokenPrice(uint256 offerID, address paymentMethod)
-        public
-        view
-        existOffer(offerID)
-        returns (uint256)
-    {
-        uint256 price;
-        // ETH need a different logic to get most decimal posible
-        if (paymentMethod == _ETH) {
-            price = (uint256(1 ether / offers[offerID].price) *
-                    uint256(getThePrice(paymentMethod)) / 10**8);
-        } else {
-            price = (offers[offerID].price * uint256(getThePrice(paymentMethod))/ 10**8);
-        }
-        return price;
     }
 
     /// @notice mark the offer as not-buyable
@@ -164,33 +136,27 @@ contract Market is OwnableUpgradeable {
     }
 
     /// @notice Buy the Offer, sending offers token to a buyer, fee to collector y price to token admin
-    function BuyOffer(uint256 offerID, address paymentMethod) public payable existOffer(offerID) {
-        
+    function BuyOffer(uint256 offerID, uint256 amount) public payable existOffer(offerID) {
         require(offers[offerID].available,"Offer is not available");
         require(offers[offerID].deadline >= block.timestamp,"Expired offer");
-        
-        ERC1155 token = ERC1155(offers[offerID].token);
-        uint256 price = getTokenPrice(offerID, paymentMethod);
-        uint256 _fee = price / fee;
+        require(offers[offerID].amount >= amount,"Expired offer");
 
+        ERC1155 token = ERC1155(offers[offerID].token);
+        uint256 price = offers[offerID].price * amount;
+        uint256 _fee = price / fee;
         
-        if( paymentMethod == _ETH ) { // ETH transfers
-            require(msg.value >= price + _fee, "not enough ETH");
-            collector.transfer(_fee);
-            offers[offerID].admin.transfer(price);
-        } else { // ERC20 transfers
-            IERC20 paymentToken = IERC20(paymentMethod);
-            uint256 funds = paymentToken.allowance(msg.sender, address(this));
-            require(funds >= price + _fee, "not enough funds");
-            paymentToken.transferFrom(msg.sender, collector, _fee);
-            paymentToken.transferFrom(msg.sender, offers[offerID].admin, price);
-        }
+        IERC20 paymentToken = IERC20(PaymentsAllowed[0]);
+        uint256 fundsAllowance = paymentToken.allowance(msg.sender, address(this));
+        require(fundsAllowance >= price, "not enough funds approved");
+
+        paymentToken.transferFrom(msg.sender, collector, _fee);
+        paymentToken.transferFrom(msg.sender, offers[offerID].admin, price - _fee);
 
         token.safeTransferFrom(
             offers[offerID].admin,
             msg.sender,
             offers[offerID].tokenID,
-            offers[offerID].amount,
+            amount,
             ""
         );
         
@@ -199,13 +165,17 @@ contract Market is OwnableUpgradeable {
             msg.sender,
             offers[offerID].token,
             offers[offerID].tokenID,
-            offers[offerID].amount,
+            amount,
             block.timestamp,
             price,
             _fee
         );
-        offers[offerID].available = false;
-        payable(msg.sender).transfer(address(this).balance);
+        
+        offers[offerID].amount = offers[offerID].amount - amount;
+        if(offers[offerID].amount == 0){
+            offers[offerID].available = false;
+        }
+        //payable(msg.sender).transfer(address(this).balance); //Is this necessary?
     }
 
     /// @notice receive token 1155
