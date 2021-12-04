@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const [deployer, dao] = await ethers.getSigners();
 
   // Large number for approvals
   const largeApproval = '100000000000000000000000000000000';
@@ -17,6 +17,16 @@ async function main() {
   const nft = await NFT.deploy()
   await nft.mint(initialMint)
 
+  const Market = await ethers.getContractFactory('Market')
+  const market = await Market.deploy(wsCHEEZ, DAO.address)
+
+  await nft.setApprovalForAll(market.address, true)
+  await wsCHEEZ.setApprovalForAll(market.address, true)
+
+  console.log("wsCHEEZ: ", wsCHEEZ.address )
+  console.log("NFT: ", nft.address )
+  console.log("Market: ", market.address )
+  console.log("DAO: ", dao.address )
 }
 
 main()
