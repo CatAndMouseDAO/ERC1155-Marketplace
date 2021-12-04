@@ -41,6 +41,7 @@ async function main() {
 
 		console.log("Setup approval for nft")
 		await nft.setApprovalForAll(market.address, true);
+        
 		console.log("Make Offer")
 		let sell_amount = 10
 		let token_id = 0
@@ -52,8 +53,13 @@ async function main() {
 		console.log("Approve tokens and Buy offer")
 		await wsCHEEZ.connect(buyer).approve(market.address, largeApproval);
 
-		let offer_id = 0 
 		let ammount = 1 
+        let offer_total = await market.numOffers()
+
+		let offer_id = offer_total - 1 // gets valid offer id to bid
+
+        console.log("offerTotal toString " + offer_total.toString())
+
 		await market.connect(buyer).BuyOffer(offer_id, ammount);
 		nftBal = await nft.balanceOf(buyer.address, 0)
 		console.log("buyer NFT bal after: ", nftBal.toString())
