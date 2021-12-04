@@ -1,68 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IMarket.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Market for ERC1155 token
 /// @author Nazh_G
-contract Market is Ownable {
-
-    /// @notice the offers has the token that can be bought
-    /// @dev price is in USD
-    /// @dev deadline is a TIMESTAMP
-    struct Offer {
-        address payable admin;
-        bool available;
-        address token;
-        uint256 tokenID;
-        uint256 amount;
-        uint256 deadline;
-        uint256 price;
-    }
-
+contract Market is IMarket {
     mapping(uint256 => Offer) public offers;
     uint256 public numOffers;
-
-    /// @notice here are stored the ERC20 tokens that can be used to buy
-    /// @dev KEY: token address => VALUE AggregatorV3Interface address (to get the price)
     IERC20 paymentToken;
 
     /// @notice fees will fall here
     address payable private collector;
     uint256 private fee;
 
-    /// @notice admin is who publish
-    event Sell(
-        uint256 offerID,
-        address indexed admin,
-        address indexed token,
-        uint256 indexed tokenID,
-        uint256 amount,
-        uint256 deadline,
-        uint256 price
-    );
-
-    /// @notice deadline is the moment when was buy
-    event Buy(
-        uint256 offerID,
-        address indexed buyer,
-        address indexed token,
-        uint256 indexed tokenID,
-        uint256 amount,
-        uint256 deadline,
-        uint256 price,
-        uint256 fee
-    );
-
-    event Cancel(
-        address indexed canceller,
-        address indexed token,
-        uint256 indexed tokenID,
-        uint256 time
-    );
 
     /// @dev init PaymentsAllowed, fee and collerctor
     constructor(address wsCHEEZ, address DAO) {
@@ -92,6 +46,7 @@ contract Market is Ownable {
         require(msg.sender == offers[offerID].admin,"Only token creator do that");
         offers[offerID].available = false;
         emit Cancel(
+            offerID,
             msg.sender,
             offers[offerID].token,
             offers[offerID].tokenID,
