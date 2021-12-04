@@ -9,24 +9,30 @@ async function main() {
   const initialMint = '10000000000000000000000000';
 
   // Deploy DAI
+  console.log("deploy wsCHEEZ")
   const WSCHEEZ = await ethers.getContractFactory('WSCHEEZ');
   const wsCHEEZ = await WSCHEEZ.deploy( 0 );
   await wsCHEEZ.mint( deployer.address, initialMint );
 
+  console.log("deploy NFT")
   const NFT = await ethers.getContractFactory('NFT');
   const nft = await NFT.deploy()
   await nft.mint(initialMint)
 
+  console.log("deploy market")
   const Market = await ethers.getContractFactory('Market')
-  const market = await Market.deploy(wsCHEEZ, DAO.address)
+  const market = await Market.deploy(wsCHEEZ.address, dao.address)
 
-  await nft.setApprovalForAll(market.address, true)
-  await wsCHEEZ.setApprovalForAll(market.address, true)
+  console.log("deploy approval")
+  await nft.setApprovalForAll(market.address, true);
+  await wsCHEEZ.approve(market.address, largeApproval);
 
   console.log("wsCHEEZ: ", wsCHEEZ.address )
   console.log("NFT: ", nft.address )
   console.log("Market: ", market.address )
   console.log("DAO: ", dao.address )
+
+
 }
 
 main()

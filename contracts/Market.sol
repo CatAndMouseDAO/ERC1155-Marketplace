@@ -65,7 +65,7 @@ contract Market is Ownable {
     );
 
     /// @dev init PaymentsAllowed, fee and collerctor
-    constructor(address wsCHEEZ, address DAO) external {
+    constructor(address wsCHEEZ, address DAO) {
         paymentToken = IERC20(wsCHEEZ);
         collector = payable(DAO);
         fee = 100;
@@ -107,7 +107,7 @@ contract Market is Ownable {
             "Approval Needed"
         );
         require(_offer.amount > 0,"Not token to sell");
-        uint256 balance = token.balanceOf(msg.sender);
+        uint256 balance = token.balanceOf(msg.sender, _offer.tokenID);
         require(_offer.amount <= balance);
         
         Offer storage offer = offers[numOffers];
