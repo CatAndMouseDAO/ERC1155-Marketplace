@@ -113,6 +113,8 @@ contract Market is OwnableUpgradeable {
             "Approval Needed"
         );
         require(_offer.amount > 0,"Not token to sell");
+        uint256 balance = token.balanceOf(msg.sender);
+        require(_offer.amount <= balance);
         
         Offer storage offer = offers[numOffers];
         // offer = _offer; there is any way to do this pretty
