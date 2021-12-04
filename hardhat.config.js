@@ -10,12 +10,7 @@ require('@openzeppelin/hardhat-upgrades');
 
 module.exports = {
   networks: {
-    hardhat: {
-      forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 11589707,
-      },
-    },
+    hardhat: {},
     // live: {
     //   url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
     //   accounts: [process.env.MAINNET_PRIVKEY],
