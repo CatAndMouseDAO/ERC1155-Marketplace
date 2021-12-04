@@ -100,34 +100,40 @@ contract Market is Ownable {
     }
 
     /// @notice publishes an offer if you have access to transfer the token
-    function MakeOffer(Offer memory _offer) external {
-        ERC1155 token = ERC1155(_offer.token);
+    function MakeOffer(address _token,
+                       uint256 _tokenID,
+                       uint256 _amount,
+                       uint256 _deadline,
+                       uint256 _price
+    ) external {
+        console.log(_token);
+        ERC1155 token = ERC1155(_token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
             "Approval Needed"
         );
-        require(_offer.amount > 0,"Not token to sell");
-        uint256 balance = token.balanceOf(msg.sender, _offer.tokenID);
-        require(_offer.amount <= balance);
+        require(_amount > 0,"Not token to sell");
+        uint256 balance = token.balanceOf(msg.sender, _tokenID);
+        require(_amount <= balance);
         
         Offer storage offer = offers[numOffers];
         // offer = _offer; there is any way to do this pretty
-        offer.admin = _offer.admin;
-        offer.token = _offer.token;
-        offer.tokenID = _offer.tokenID;
-        offer.amount = _offer.amount;
-        offer.deadline = _offer.deadline;
-        offer.price = _offer.price;
+        offer.token = _token;
+        offer.tokenID = _tokenID;
+        offer.amount = _amount;
+        offer.deadline = _deadline;
+        offer.price = _price;
+        offer.admin = payable(msg.sender);
         offer.available = true;
 
         emit Sell(
             numOffers++,
-            _offer.admin,
-            _offer.token,
-            _offer.tokenID,
-            _offer.amount,
-            _offer.deadline,
-            _offer.price
+            offer.admin,
+            offer.token,
+            offer.tokenID,
+            offer.amount,
+            offer.deadline,
+            offer.price
         );
     }
 

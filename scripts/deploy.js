@@ -32,7 +32,16 @@ async function main() {
   console.log("Market: ", market.address )
   console.log("DAO: ", dao.address )
 
-
+  console.log("Make offer")
+  let offer = {
+    token: nft.address,
+    tokenID: 0,
+    amount: 1,
+    deadline: Math.floor((Date.now()/1000)) + 100000,
+    price: parseInt(ethers.utils.parseUnits("3").toString())
+  }
+  console.log(offer)
+  await market.MakeOffer(offer)
 }
 
 main()
