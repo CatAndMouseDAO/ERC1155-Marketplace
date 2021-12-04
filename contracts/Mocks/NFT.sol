@@ -25,7 +25,7 @@ contract NFT is ERC1155 {
         _mint(msg.sender, SWORD, 40, "");
     }
 
-    function mint(amount) external {
+    function mint(uint256 amount) external {
         _mint(msg.sender, GOLD, amount);
         _mint(msg.sender, GOLD, amount);
     }
