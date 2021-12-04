@@ -29,7 +29,7 @@ contract Market is OwnableUpgradeable {
 
     /// @notice here are stored the ERC20 tokens that can be used to buy
     /// @dev KEY: token address => VALUE AggregatorV3Interface address (to get the price)
-    mapping(uint256 => address) public PaymentsAllowed;
+    IERC20 paymentToken;
 
     /// @notice fees will fall here
     address payable private collector;
@@ -72,7 +72,7 @@ contract Market is OwnableUpgradeable {
         collector = payable(tx.origin);
         fee = 100;
 
-        PaymentsAllowed[0] = wsCHEEZ;
+        paymentToken = IERC20(wsCHEEZ);
     }
 
     modifier existOffer(uint256 offerID) {
@@ -145,7 +145,6 @@ contract Market is OwnableUpgradeable {
         uint256 price = offers[offerID].price * amount;
         uint256 _fee = price / fee;
         
-        IERC20 paymentToken = IERC20(PaymentsAllowed[0]);
         uint256 fundsAllowance = paymentToken.allowance(msg.sender, address(this));
         require(fundsAllowance >= price, "not enough funds approved");
 
