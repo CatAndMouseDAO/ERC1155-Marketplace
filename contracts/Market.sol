@@ -82,7 +82,7 @@ contract Market is IMarket {
         offer.available = true;
 
         emit Sell(
-            numOffers++,
+            numOffers,
             offer.admin,
             offer.token,
             offer.tokenID,
@@ -90,6 +90,7 @@ contract Market is IMarket {
             offer.deadline,
             offer.price
         );
+        numOffers++;
     }
 
     /// @notice Buy the Offer, sending offers token to a buyer, fee to collector y price to token admin
