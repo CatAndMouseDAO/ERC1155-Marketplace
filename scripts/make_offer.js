@@ -9,6 +9,11 @@ DAO:  0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 const { ethers } = require("hardhat");
 const { expectRevert,time } = require('@openzeppelin/test-helpers');
 
+function between(min, max) {  
+	return Math.floor(
+	  Math.random() * (max - min) + min
+	).toString()
+}
 
 async function main() {
   const [deployer, dao, buyer] = await ethers.getSigners();
@@ -37,14 +42,16 @@ async function main() {
 
         console.log("Set offer")
 		const fiveMinutesOffer = Number(await time.latest()) + ( 5 * 60000 );
-		const price = ethers.utils.parseUnits("3").toString()
+
+		// const price = ethers.utils.parseUnits("3").toString()
+		const price = ethers.utils.parseUnits(between(3,7)).toString()
 
 		console.log("Setup approval for nft")
 		await nft.setApprovalForAll(market.address, true);
         
 		console.log("Make Offer")
-		let sell_amount = 10
-		let token_id = 0
+		let sell_amount = between(1,10)
+		let token_id = between(0,1)
 		await market.MakeOffer(nft.address, token_id, sell_amount, fiveMinutesOffer, price)
 
 		let nftBal = await nft.balanceOf(buyer.address, 0)
@@ -53,10 +60,10 @@ async function main() {
 		console.log("Approve tokens and Buy offer")
 		await wsCHEEZ.connect(buyer).approve(market.address, largeApproval);
 
-		let ammount = 1 
+		let ammount = 1
         let offer_total = await market.numOffers()
 
-		let offer_id = offer_total - 1 // gets valid offer id to bid
+		let offer_id = offer_total // gets valid offer id to bid
 
         console.log("offerTotal toString " + offer_total.toString())
 
