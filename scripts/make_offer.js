@@ -44,7 +44,7 @@ async function main() {
 		const fiveMinutesOffer = Number(await time.latest()) + ( 10000 * 60000 );
 
 		// const price = ethers.utils.parseUnits("3").toString()
-		const price = ethers.utils.parseUnits(between(5,15)).toString()
+		const price = ethers.utils.parseUnits(between(5,15), 9).toString()
 
 		console.log("Setup approval for nft")
 		await nft.setApprovalForAll(market.address, true);
