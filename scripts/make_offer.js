@@ -41,18 +41,20 @@ async function main() {
 
 
         console.log("Set offer")
-		const fiveMinutesOffer = Number(await time.latest()) + ( 5 * 60000 );
+		const fiveMinutesOffer = Number(await time.latest()) + ( 10000 * 60000 );
 
 		// const price = ethers.utils.parseUnits("3").toString()
-		const price = ethers.utils.parseUnits(between(3,7)).toString()
+		const price = ethers.utils.parseUnits(between(5,15)).toString()
 
 		console.log("Setup approval for nft")
 		await nft.setApprovalForAll(market.address, true);
         
 		console.log("Make Offer")
-		let sell_amount = between(1,10)
-		let token_id = between(0,1)
-		await market.MakeOffer(nft.address, token_id, sell_amount, fiveMinutesOffer, price)
+		let sell_amount = between(7,10)
+		// let tokenId = between(0,2)  # randomized version
+
+		let tokenId = 0
+		await market.MakeOffer(nft.address, tokenId, sell_amount, fiveMinutesOffer, price)
 
 		let nftBal = await nft.balanceOf(buyer.address, 0)
 		console.log("Buyer NFT bal before: ", nftBal.toString())
@@ -67,14 +69,16 @@ async function main() {
 
         console.log("offerTotal toString " + offer_total.toString())
 
-		await market.connect(buyer).BuyOffer(offer_id, ammount);
-		nftBal = await nft.balanceOf(buyer.address, 0)
-		console.log("buyer NFT bal after: ", nftBal.toString())
+		// errs after this 
 
-		// test buying the other 9 offered 
-		await market.connect(buyer).BuyOffer(offer_id, 9);
-		nftBal = await nft.balanceOf(buyer.address, token_id)
-		console.log("buyer NFT bal after: ", nftBal.toString())
+		// await market.connect(buyer).BuyOffer(offer_id, ammount);
+		// nftBal = await nft.balanceOf(buyer.address, 0)
+		// console.log("buyer NFT bal after: ", nftBal.toString())
+
+		// // test buying the other 9 offered 
+		// await market.connect(buyer).BuyOffer(offer_id, 9);
+		// nftBal = await nft.balanceOf(buyer.address, tokenId)
+		// console.log("buyer NFT bal after: ", nftBal.toString())
 
 }
 
