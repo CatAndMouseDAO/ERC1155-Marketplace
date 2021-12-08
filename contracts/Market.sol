@@ -60,8 +60,8 @@ contract Market is IMarket {
                         uint256 _deadline,
                         uint256 _price,
                         uint256 _offerID
-    ) external existOffer(offerID) {
-        require(msg.sender == offers[offerID].admin,"Only token creator do that");
+    ) external existOffer(_offerID) {
+        require(msg.sender == offers[_offerID].admin,"Only token creator do that");
         console.log(_token);
         ERC1155 token = ERC1155(_token);
         require(
@@ -72,14 +72,13 @@ contract Market is IMarket {
         uint256 balance = token.balanceOf(msg.sender, _tokenID);
         require(_amount <= balance);
         
-        Offer storage offer = offers[numOffers];
+        Offer storage offer = offers[_offerID];
         // offer = _offer; there is any way to do this pretty
         offer.token = _token;
         offer.tokenID = _tokenID;
         offer.amount = _amount;
         offer.deadline = _deadline;
         offer.price = _price;
-        offer.admin = payable(msg.sender);
         offer.available = true;
 
         emit Sell(
