@@ -18,16 +18,17 @@ function between(min, max) {
 }
 
 async function main() {
-  const [deployer, dao, buyer] = await ethers.getSigners();
+  const [deployer, dao, buyer, anotherSeller] = await ethers.getSigners();
+
 
 		// Large number for approvals
 		const largeApproval = '100000000000000000000000000000000';
 		// Initial mint for wsCHEEZ
 		const initialMint = '10000000000000000000000000';
 
-		const wSCHEEZ_contract =  process.env.wSCHEEZ_contract		// '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853'
-    	const nft_contract = process.env.nft_contract 				//'0x8A791620dd6260079BF849Dc5567aDC3F2FdC318'
-    	const market_contract = process.env.market_contract 		//'0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e'
+		const wSCHEEZ_contract =  process.env.wSCHEEZ_contract		// ''
+    	const nft_contract = process.env.nft_contract 				//''
+    	const market_contract = process.env.market_contract 		//''
 	
 		// Deploy DAI
 		console.log(`attach wsCHEEZ ${wSCHEEZ_contract}`)
@@ -47,14 +48,14 @@ async function main() {
 		const fiveMinutesOffer = Number(await time.latest()) + ( 10000 * 60000 );
 
 		// TEST CONTROLS 
-		const priceLow = 3
-		const priceHigh = 15 
+		const priceLow = 6
+		const priceHigh = 8
 
 		const tokenIdLow= 0 
-		const tokenIdHigh = 2 
+		const tokenIdHigh = 3
 
 		const sellAmountLow = 1
-		const sellAmountHigh = 5
+		const sellAmountHigh = 3
 
 		const price = ethers.utils.parseUnits(between(priceLow, priceHigh), 9).toString()
 
@@ -63,13 +64,13 @@ async function main() {
         
 		console.log("Make Offer--------------")
 		let sellAmount = between(sellAmountLow,sellAmountHigh)
-		// let tokenId = between(0,2)  # randomized version
 
 		let tokenId = between(tokenIdLow, tokenIdHigh)
+		//et tokenId = 0
 		await market.MakeOffer(nft.address, tokenId, sellAmount, fiveMinutesOffer, price)
 
-		let nftBal = await nft.balanceOf(buyer.address, 0)
-		console.log("Buyer NFT bal before: ", nftBal.toString())
+		//let nftBal = await nft.balanceOf(buyer.address, 0)
+		//console.log("Buyer NFT bal before: ", nftBal.toString())
 
 		console.log("Approve tokens and Buy offer")
 		await wsCHEEZ.connect(buyer).approve(market.address, largeApproval);
@@ -79,6 +80,20 @@ async function main() {
 
 		console.log(`Total Number of Offers: ${offerTotal}`)
         console.log(`Created offerId  ${offerId.toString()}`)
+
+
+		// list another one from a different seller 
+
+		// let sellAmount2 = between(sellAmountLow,sellAmountHigh)
+		// let tokenId2 = between(tokenIdLow, tokenIdHigh)
+		// const price2 = ethers.utils.parseUnits(between(priceLow, priceHigh), 9).toString()
+
+		// const offerDeadline = Number(await time.latest()) + ( 10000 * 60000 );
+
+		// await nft.connect(anotherSeller).setApprovalForAll(market.address, true);
+		// await market.MakeOffer(nft.address, tokenId2, sellAmount2, offerDeadline, price2)
+
+
 
 
 		// errs after this 

@@ -14,9 +14,9 @@ async function main() {
     const largeApproval = '100000000000000000000000000000000';
     // Initial mint for wsCHEEZ
     const initialMint = '10000000000000000000000000';
-    const wSCHEEZ_contract = '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853'
-    const nft_contract = '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318'
-    const market_contract = '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e'
+    const wSCHEEZ_contract =  process.env.wSCHEEZ_contract		
+    const nft_contract = process.env.nft_contract 				//''
+    const market_contract = process.env.market_contract 
 
     // Deploy DAI
     console.log(`attach wsCHEEZ ${wSCHEEZ_contract}`)

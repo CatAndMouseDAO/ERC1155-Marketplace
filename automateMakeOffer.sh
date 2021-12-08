@@ -9,6 +9,6 @@ do
     npx hardhat run scripts/make_offer.js --network localhost
     echo $counter
     ((counter++))
-    sleep 2
+    sleep 0.1
 done
 echo "Ran"
