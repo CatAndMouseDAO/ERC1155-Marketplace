@@ -143,15 +143,8 @@ contract Market is IMarket {
         uint256 fundsAllowance = paymentToken.allowance(msg.sender, address(this));
         require(fundsAllowance >= price, "not enough funds approved");
 
-
         paymentToken.transferFrom(msg.sender, collector, _fee);
         paymentToken.transferFrom(msg.sender, offers[offerID].admin, price - _fee);
-        
-        offers[offerID].amount = offers[offerID].amount - amount;
-        if(offers[offerID].amount == 0){
-            offers[offerID].available = false;
-        }
-        
 
         token.safeTransferFrom(
             offers[offerID].admin,
@@ -171,6 +164,11 @@ contract Market is IMarket {
             price,
             _fee
         );
+        
+        offers[offerID].amount = offers[offerID].amount - amount;
+        if(offers[offerID].amount == 0){
+            offers[offerID].available = false;
+        }
     }
 
     /// @notice receive token 1155
