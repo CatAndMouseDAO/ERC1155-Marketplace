@@ -13,7 +13,6 @@ contract Market is IMarket {
     uint256 public numOffers;
     IERC20 paymentToken;
 
-    /// @notice fees will fall here
     address payable private collector;
     uint256 private fee;
 
@@ -146,6 +145,11 @@ contract Market is IMarket {
 
         paymentToken.transferFrom(msg.sender, collector, _fee);
         paymentToken.transferFrom(msg.sender, offers[offerID].admin, price - _fee);
+        
+        offers[offerID].amount = offers[offerID].amount - amount;
+        if(offers[offerID].amount == 0){
+            offers[offerID].available = false;
+        }
 
         token.safeTransferFrom(
             offers[offerID].admin,
@@ -165,11 +169,6 @@ contract Market is IMarket {
             price,
             _fee
         );
-        
-        offers[offerID].amount = offers[offerID].amount - amount;
-        if(offers[offerID].amount == 0){
-            offers[offerID].available = false;
-        }
     }
 
     /// @notice receive token 1155
