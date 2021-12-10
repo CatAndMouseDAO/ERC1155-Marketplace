@@ -21,7 +21,7 @@ contract Market is IMarket {
     constructor(address wsCHEEZ, address DAO) {
         paymentToken = IERC20(wsCHEEZ);
         collector = payable(DAO);
-        fee = 100;
+        fee = 500;
     }
 
     modifier existOffer(uint256 offerID) {
@@ -116,8 +116,6 @@ contract Market is IMarket {
         offer.admin = payable(msg.sender);
         offer.available = true;
 
-        numOffers++;
-
         emit Sell(
             numOffers,
             offer.admin,
@@ -127,6 +125,8 @@ contract Market is IMarket {
             offer.deadline,
             offer.price
         );
+
+        numOffers++;
     }
 
     /// @notice Buy the Offer, sending offers token to a buyer, fee to collector y price to token admin
