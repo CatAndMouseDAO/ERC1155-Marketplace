@@ -61,7 +61,6 @@ contract Market is IMarket {
                         uint256 _offerID
     ) external existOffer(_offerID) {
         require(msg.sender == offers[_offerID].admin,"Only token creator do that");
-        console.log(_token);
         ERC1155 token = ERC1155(_token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
@@ -98,7 +97,6 @@ contract Market is IMarket {
                        uint256 _deadline,
                        uint256 _price
     ) external {
-        console.log(_token);
         ERC1155 token = ERC1155(_token);
         require(
             token.isApprovedForAll(msg.sender, address(this)),
@@ -118,6 +116,8 @@ contract Market is IMarket {
         offer.admin = payable(msg.sender);
         offer.available = true;
 
+        numOffers++;
+
         emit Sell(
             numOffers,
             offer.admin,
@@ -127,7 +127,6 @@ contract Market is IMarket {
             offer.deadline,
             offer.price
         );
-        numOffers++;
     }
 
     /// @notice Buy the Offer, sending offers token to a buyer, fee to collector y price to token admin
@@ -142,6 +141,11 @@ contract Market is IMarket {
         
         uint256 fundsAllowance = paymentToken.allowance(msg.sender, address(this));
         require(fundsAllowance >= price, "not enough funds approved");
+
+        offers[offerID].amount = offers[offerID].amount - amount;
+        if(offers[offerID].amount == 0){
+            offers[offerID].available = false;
+        }
 
         paymentToken.transferFrom(msg.sender, collector, _fee);
         paymentToken.transferFrom(msg.sender, offers[offerID].admin, price - _fee);
@@ -163,12 +167,7 @@ contract Market is IMarket {
             block.timestamp,
             price,
             _fee
-        );
-        
-        offers[offerID].amount = offers[offerID].amount - amount;
-        if(offers[offerID].amount == 0){
-            offers[offerID].available = false;
-        }
+        );        
     }
 
     /// @notice receive token 1155
